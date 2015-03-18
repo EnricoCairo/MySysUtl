@@ -127,7 +127,7 @@ BEGIN
 			SET s = SUBSTR(iStr, i);
 		END IF;
 
-		SET k = INSTR(SUBSTR(s, i), '=>');
+		SET k = INSTR(s, '=>');
 
 		IF k > 0 THEN
 			RETURN SUBSTR(s, k+2);
@@ -140,6 +140,9 @@ BEGIN
 END$$
 
 DROP FUNCTION IF EXISTS `sysaux`.`get_int`$$
+
+-- remember to run following command for each user account
+-- GRANT EXECUTE ON PROCEDURE `sysaux`.`logon_trigger` TO <'user'>@<'host'>;
 
 CREATE DEFINER=`root`@`localhost` FUNCTION `sysaux`.`get_int` (
 	iStr		VARCHAR(1024),

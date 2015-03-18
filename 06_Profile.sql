@@ -20,14 +20,6 @@ CREATE FUNCTION `sysaux`.`profile_man` (
 	iStr		VARCHAR(1024)
 ) RETURNS INT DETERMINISTIC MODIFIES SQL DATA 
 BEGIN
-	DECLARE vAction			VARCHAR(64)	DEFAULT `sysaux`.`get_str`(iStr, 'ACTION'                  , '');
-	DECLARE vUser			VARCHAR(16)	DEFAULT `sysaux`.`get_str`(iStr, 'USER'                    , '');
-	DECLARE vProfile		VARCHAR(64)	DEFAULT `sysaux`.`get_str`(iStr, 'PROFILE'                 , 'default');
-	DECLARE vMaxQueries		INT			DEFAULT `sysaux`.`get_int`(iStr, 'MAX_QUERIES_PER_HOUR'    , '0');
-	DECLARE vMaxUpdates		INT			DEFAULT `sysaux`.`get_int`(iStr, 'MAX_UPDATES_PER_HOUR'    , '0');
-	DECLARE vMaxConnHour	INT			DEFAULT `sysaux`.`get_int`(iStr, 'MAX_CONNECTIONS_PER_HOUR', '0');
-	DECLARE vMaxUsrConn		INT			DEFAULT `sysaux`.`get_int`(iStr, 'MAX_USER_CONNECTIONS'    , '0');
-
 	DECLARE vHost			VARCHAR(64);
 	DECLARE ErrNo			INT			DEFAULT 0;
 	DECLARE i				INT;
@@ -35,6 +27,14 @@ BEGIN
 
 	DECLARE EXIT HANDLER FOR NOT FOUND SET ErrNo=2;
 	DECLARE EXIT HANDLER FOR SQLSTATE '23000' SET ErrNo=6; # duplicate entry
+
+	SET @vAction		= `sysaux`.`get_str`(iStr, 'ACTION'                  , '');
+	SET @vUser			= `sysaux`.`get_str`(iStr, 'USER'                    , '');
+	SET @vProfile		= `sysaux`.`get_str`(iStr, 'PROFILE'                 , 'default');
+	SET @vMaxQueries	= `sysaux`.`get_int`(iStr, 'MAX_QUERIES_PER_HOUR'    , '0');
+	SET @vMaxUpdates	= `sysaux`.`get_int`(iStr, 'MAX_UPDATES_PER_HOUR'    , '0');
+	SET @vMaxConnHour	= `sysaux`.`get_int`(iStr, 'MAX_CONNECTIONS_PER_HOUR', '0');
+	SET @vMaxUsrConn	= `sysaux`.`get_int`(iStr, 'MAX_USER_CONNECTIONS'    , '0');
 
 	IF	vProfile = '' THEN
 		SET ErrNo = 3;
@@ -75,27 +75,20 @@ BEGIN
 					IF i = 0 THEN
 						SET ErrNo = 7;
 					ELSE
-						SELECT	`max_queries_per_hour`,
-								`max_updates_per_hour`,
-								`max_connections_per_hour`,
-								`max_user_connections`
-						INTO	vMaxQueries,
-								vMaxUpdates,
-								vMaxConnHour,
-								vMaxUsrConn
-						FROM	`sysaux`.`profiles`
-						WHERE	`profile` = vProfile;
+						SET @sqlstr = CONCAT('GRANT USAGE ON *.* TO ? ',
+											'WITH MAX_QUERIES_PER_HOUR ? ',
+											'MAX_UPDATES_PER_HOUR ? ',
+											'MAX_CONNECTIONS_PER_HOUR ? ',
+                                            'MAX_USER_CONNECTIONS ?');
+
+						PREPARE sqlexe FROM @sqlstr;
 
 						the_loop: LOOP
 							FETCH cUser INTO vHost;
+                            
+                            SET @account = CONCAT('''', @vUser, '''@''', vHost, '''');
 
-							UPDATE	`mysql.user`
-							SET		`max_questions`			= vMaxQueries,
-									`max_updates`			= vMaxUpdates,
-									`max_connections`		= vMaxConnHour,
-									`max_user_connections`	= vMaxUsrConn
-							WHERE	`host` = vHost
-							AND		`user` = vUser;
+							EXECUTE sqlexe USING @account, @vMaxQueries, @vMaxUpdates, @vMaxConnHour, @vMaxUsrConn;
 
 							SET i = i -1;
 
@@ -105,9 +98,9 @@ BEGIN
 
 						END LOOP the_loop;
 
-						CLOSE cUser;
+						DEALLOCATE PREPARE sqlexe;
 
-						FLUSH PRIVILEGES;
+						CLOSE cUser;
 
 						SET ErrNo = 0;
 					END IF;

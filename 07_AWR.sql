@@ -29,8 +29,10 @@ CREATE TABLE `sysaux`.`snapshot_report` (
 	PRIMARY KEY (`rep_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8$$
 
-CREATE PROCEDURE `sysaux`.`create_snapshot` (
-)
+DROP PROCEDURE IF EXISTS `sysaux`.`create_snapshot`$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sysaux`.`create_snapshot` (
+) DETERMINISTIC CONTAINS SQL
 BEGIN
 	DECLARE id	BIGINT(20);
 
@@ -73,27 +75,28 @@ BEGIN
 
 END$$
 
-CREATE FUNCTION `sysaux`.`create_snapshot_auto` (
-	IN	i_start		TIME,
-	IN	i_delay		INT,
-	OUT	o_res		INT)
-BEGIN
-	DECLARE when TIMESTAMP = CONCAT( CURDATE(), ' ', i_start);
+DROP FUNCTION IF EXISTS `sysaux`.`create_snapshot_auto`$$
 
-	CREATE EVENT `sysaux`.`get_a_snap`
-	ON SCHEDULE AT when + INTERVAL i_delay HOUR
+CREATE DEFINER=`root`@`localhost` FUNCTION `sysaux`.`create_snapshot_auto` (
+	i_start		TIME,
+	i_delay		INT) RETURNS INT DETERMINISTIC CONTAINS SQL
+BEGIN
+	DECLARE clock TIMESTAMP DEFAULT CONCAT( CURDATE(), ' ', i_start);
+
+	CREATE EVENT `get_a_snap`
+	ON SCHEDULE AT clock + INTERVAL i_delay HOUR
 	COMMENT 'Scheduled Statspack Snapshot'
 	DO
 		CALL `sysutl`.`create_snapshot`;
 
 END$$
 
+DROP FUNCTION IF EXISTS `sysaux`.`modify_snapshot_settings`$$
 
-CREATE FUNCTION `sysaux`.`modify_snapshot_settings` (
-	IN	i_delay		INT,
-	OUT	o_res		INT)
-BEGIN
-	ALTER EVENT `sysaux`.`get_a_snap`
+CREATE DEFINER=`root`@`localhost` FUNCTION `sysaux`.`modify_snapshot_settings` (
+	i_delay		INT) RETURNS INT DETERMINISTIC CONTAINS SQL
+BEGIN 
+	ALTER EVENT `get_a_snap`
 	ON SCHEDULE
 		EVERY i_delay HOUR
 		STARTS CURRENT_TIMESTAMP + INTERVAL 4 HOUR;

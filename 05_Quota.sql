@@ -75,6 +75,16 @@ BEGIN
 			LEAVE get_unlock;
 		END IF;
 
+        SET @sqlstr = CONCAT('GRANT WRITE ON `', my_table_schema, '` TO ', my_grantee);
+
+        PREPARE sqlexe FROM @sqlstr;
+
+        EXECUTE sqlexe;
+
+		DEALLOCATE PREPARE sqlexe;
+
+		DELETE FROM `sysaux`.`quota_execed` WHERE `table_schema` = my_table_schema AND `grantee` = my_grantee;
+
 	END LOOP get_unlock;
 
 	CLOSE c_unlock;
@@ -90,6 +100,14 @@ BEGIN
 		IF end_cur = TRUE THEN
 			LEAVE get_lock;
 		END IF;
+
+        SET @sqlstr = CONCAT('GRANT WRITE ON `', my_table_schema, '` TO ', my_grantee);
+
+        PREPARE sqlexe FROM @sqlstr;
+
+        EXECUTE sqlexe;
+
+		DEALLOCATE PREPARE sqlexe;
 
 	END LOOP get_lock;
 
