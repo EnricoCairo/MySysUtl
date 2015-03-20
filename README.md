@@ -45,3 +45,7 @@ You can trace the grown of your databases.
 
 - File "07_AWR.sql"
 
+
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/EnricoCairo/mysysutl/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+
