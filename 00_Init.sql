@@ -11,8 +11,6 @@
 SET GLOBAL event_scheduler = ON;
 SET GLOBAL general_log     = ON;
 SET GLOBAL slow_query_log  = ON;
-SET GLOBAL log_output      = 'table';
-SET GLOBAL init_connect    = 'CALL `sysaux`.logon_trigger()';
 
 -- Databases creation
 
