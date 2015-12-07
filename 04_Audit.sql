@@ -13,6 +13,9 @@
 --
 -- -----------------------------------------------------------------------------
 
+SET GLOBAL log_output      = 'table';
+SET GLOBAL init_connect    = 'CALL `sysaux`.logon_trigger()';
+
 DELIMITER $$
 
 USE `sysaux`$$
