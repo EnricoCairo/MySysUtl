@@ -1,12 +1,22 @@
+-- -----------------------------------------------------------------------------
+--
+-- Automatic Workload Repository
+--
+-- -----------------------------------------------------------------------------
+
 DELIMITER $$
+
+USE `sysaux`$$
+
+SELECT DATABASE(), VERSION(), NOW(), USER()$$
 
 DROP TABLE IF EXISTS `sysaux`.`snapshot`$$
 
 CREATE TABLE `sysaux`.`snapshot` (
 	`snap_id`			BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-	`date`				DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00',
+	`date`				DATETIME NOT NULL DEFAULT now(),
 	PRIMARY KEY (`snap_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8$$
+) ENGINE=InnoDB DEFAULT CHARSET=utf8$$
 
 DROP TABLE IF EXISTS `sysaux`.`snapshot_values`$$
 
@@ -14,8 +24,10 @@ CREATE TABLE `sysaux`.`snapshot_values` (
 	`snap_id`			BIGINT(20) UNSIGNED NOT NULL,
 	`category`			VARCHAR(64) NOT NULL DEFAULT '',
 	`variable_name`		VARCHAR(64) NOT NULL DEFAULT '',
-	`variable_value`	VARCHAR(1024) DEFAULT NULL
-) ENGINE=MyISAM DEFAULT CHARSET=utf8$$
+	`variable_value`	VARCHAR(1024) DEFAULT NULL,
+	PRIMARY KEY (`snap_id`),
+    FOREIGN KEY (`snap_id`) REFERENCES `sysaux`.`snapshot`(`snap_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8$$
 
 DROP TABLE IF EXISTS `sysaux`.`snapshot_report`$$
 
@@ -31,7 +43,7 @@ CREATE TABLE `sysaux`.`snapshot_report` (
 
 DROP PROCEDURE IF EXISTS `sysaux`.`create_snapshot`$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sysaux`.`create_snapshot` (
+CREATE DEFINER='root'@'localhost' PROCEDURE `sysaux`.`create_snapshot` (
 ) DETERMINISTIC CONTAINS SQL
 BEGIN
 	DECLARE id	BIGINT(20);
@@ -77,7 +89,7 @@ END$$
 
 DROP FUNCTION IF EXISTS `sysaux`.`create_snapshot_auto`$$
 
-CREATE DEFINER=`root`@`localhost` FUNCTION `sysaux`.`create_snapshot_auto` (
+CREATE DEFINER='root'@'localhost' FUNCTION `sysaux`.`create_snapshot_auto` (
 	i_start		TIME,
 	i_delay		INT) RETURNS INT DETERMINISTIC CONTAINS SQL
 BEGIN
@@ -93,7 +105,7 @@ END$$
 
 DROP FUNCTION IF EXISTS `sysaux`.`modify_snapshot_settings`$$
 
-CREATE DEFINER=`root`@`localhost` FUNCTION `sysaux`.`modify_snapshot_settings` (
+CREATE DEFINER='root'@'localhost' FUNCTION `sysaux`.`modify_snapshot_settings` (
 	i_delay		INT) RETURNS INT DETERMINISTIC CONTAINS SQL
 BEGIN 
 	ALTER EVENT `get_a_snap`
