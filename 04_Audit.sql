@@ -15,6 +15,10 @@
 
 DELIMITER $$
 
+USE `sysaux`$$
+
+SELECT DATABASE(), VERSION(), NOW(), USER()$$
+
 -- Audit log
 
 DROP TABLE IF EXISTS `sysaux`.`audit_log`$$
@@ -62,7 +66,7 @@ ALTER TABLE `sysaux`.`slow_log` ADD INDEX (`start_time`)$$
 
 DROP PROCEDURE IF EXISTS `sysaux`.`partition_management`$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sysaux`.`partition_management` (
+CREATE DEFINER='root'@'localhost' PROCEDURE `sysaux`.`partition_management` (
 	IN	tab_array	VARCHAR(512),
     IN	nextMonth	BOOLEAN
 ) DETERMINISTIC CONTAINS SQL
@@ -124,7 +128,7 @@ CREATE VIEW `sysaux`.`v$audit_slow` AS
 
 DROP EVENT IF EXISTS `sysaux`.`audit_populate`$$
 
-CREATE DEFINER=`root`@`localhost` EVENT `audit_populate`
+CREATE DEFINER='root'@'localhost' EVENT `audit_populate`
 ON SCHEDULE EVERY 1 HOUR STARTS TIMESTAMP(DATE_FORMAT(DATE_ADD(CURRENT_TIME, INTERVAL 1 HOUR),'%Y-%m-%d %H:00:00')) + INTERVAL 1 HOUR
 COMMENT 'Audit populate'
 DO BEGIN
@@ -143,7 +147,7 @@ END$$
 
 DROP EVENT IF EXISTS `mysql`.`audit_purge`$$
 
-CREATE DEFINER=`root`@`localhost` EVENT `audit_purge`
+CREATE DEFINER='root'@'localhost' EVENT `audit_purge`
 ON SCHEDULE EVERY 1 MONTH STARTS LAST_DAY(NOW()) + INTERVAL 1 MONTH
 COMMENT 'Audit cleanup'
 DO BEGIN
